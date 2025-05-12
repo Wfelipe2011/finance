@@ -21,6 +21,8 @@ model Lead {
   quoted    Boolean  @default(false) // was "orcamento"
   closed    Boolean  @default(false) // was "fechou"
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt @default(now())
+  deleted   Boolean  @default(false)
 }
 
 model BankStatement {
