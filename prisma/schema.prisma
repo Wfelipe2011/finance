@@ -16,20 +16,24 @@ model Lead {
   category  String
   rating    Float?
   reviews   Int?
+  contacted Boolean  @default(false) // was "entrei em contato"
+  replied   Boolean  @default(false) // was "resposta"
+  quoted    Boolean  @default(false) // was "orcamento"
+  closed    Boolean  @default(false) // was "fechou"
   createdAt DateTime @default(now())
 }
 
 model BankStatement {
-  id        Int      @id @default(autoincrement())
-  hash      String   @unique
-  date      DateTime
-  history   String
-  credit    Float
-  debit     Float
-  balance   Float
-  category  Category @default(OUTROS)
-  type      Type
-  mode      Mode
+  id       Int      @id @default(autoincrement())
+  hash     String   @unique
+  date     DateTime
+  history  String
+  credit   Float
+  debit    Float
+  balance  Float
+  category Category @default(OUTROS)
+  type     Type
+  mode     Mode
 }
 
 enum Type {
