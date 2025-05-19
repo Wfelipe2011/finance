@@ -7,7 +7,7 @@ export class PrismaService extends PrismaClient {
 
   constructor() {
     super({
-      log: ['query']
+      // log: ['query']
     });
     this.$on('connect' as never, () => {
       this.isConnected = true;

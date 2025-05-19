@@ -42,6 +42,9 @@ export class GoogleMapsScraper {
         'Clínicas médicas',
         'Clínicas odontológicas',
         'Consultórios',
+        'Estéticas',
+        'Consutorias',
+        'Cursos de inglês',
     ];
 
     async scrapeSorocabaLeads(cb: (body: Lead[]) => Promise<void>) {
@@ -58,83 +61,93 @@ export class GoogleMapsScraper {
         // Configurações de viewport para melhor renderização
         await page.setViewport({ width: 1440, height: 900 });
 
-        for (const category of this.categories) {
+        // Embaralha a ordem das categorias antes de processar
+        const shuffledCategories = [...this.categories].sort(() => Math.random() - 0.5);
+        const shuffledBairros = [...bairrosSorocaba].sort(() => Math.random() - 0.5);
+        for (const category of shuffledCategories) {
             console.log(category)
-            for (const bairro of bairrosSorocaba) {
-                console.log(bairro)
-                await page.goto(
-                    `https://www.google.com/maps/search/${encodeURIComponent(category)}+${encodeURIComponent(bairro)}+Sorocaba+SP`,
-                    { waitUntil: 'networkidle2' }
-                );
+            for (const bairro of shuffledBairros) {
+                try {
+                    console.log(bairro)
+                    await page.goto(
+                        `https://www.google.com/maps/search/${encodeURIComponent(category)}+${encodeURIComponent(bairro)}+Sorocaba+SP`,
+                        { waitUntil: 'networkidle2' }
+                    );
 
-                // Função de scroll automático
-                let previousHeight = 0;
-                let attempts = 0;
-                const maxScrollAttempts = 5;
+                    await page.waitForSelector('.m6QErb.DxyBCb.kA9KIf.dS8AEf', { timeout: 10000 });
 
-                while (attempts < maxScrollAttempts) {
-                    await page.waitForSelector('.m6QErb.DxyBCb.kA9KIf.dS8AEf', { timeout: 5000 });
+                    await page.waitForSelector('.m6QErb.DxyBCb.kA9KIf.dS8AEf', { timeout: 15000 });
+                    const scrollContainers = await page.$$('.m6QErb.DxyBCb.kA9KIf.dS8AEf');
 
-                    // Rolar até o final da lista
-                    const currentHeight = await page.evaluate(() => {
-                        const scrollContainer = document.querySelector('.m6QErb.DxyBCb.kA9KIf.dS8AEf');
-                        if (scrollContainer) {
-                            scrollContainer.scrollTop = scrollContainer.scrollHeight;
-                            return scrollContainer.scrollHeight;
-                        }
-                        return 0;
-                    });
-
-                    // Verificar se atingiu o final
-                    if (currentHeight === previousHeight) {
-                        const endElement = await page.$('p.fontBodyMedium > span > span');
-                        if (endElement) break;
+                    if (scrollContainers.length < 2) {
+                        console.warn('⚠️ Container de scroll não encontrado. Pulando categoria...');
+                        continue;
                     }
 
-                    previousHeight = currentHeight;
-                    attempts++;
+                    const scrollTarget = scrollContainers[1];
 
-                    // Espera aleatória entre 1s e 3s
-                    // await page.waitForTimeout(1000 + Math.random() * 2000);
-                    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
-                }
+                    let isAtBottom = false;
+                    let attempts = 0;
+                    const maxScrolls = 1000;
 
-                // Extrair dados após scroll completo
-                const categoryResults = await page.evaluate(() => {
-                    const results = [];
-                    const items = document.querySelectorAll('.Nv2PK');
+                    while (!isAtBottom && attempts < maxScrolls) {
+                        // scrolla suavemente com scrollBy
+                        await page.evaluate((el) => {
+                            el.scrollBy(0, 200);
+                        }, scrollTarget);
 
-                    items.forEach((el) => {
-                        const websiteElement = el.querySelector('.lcr4fd') as HTMLAnchorElement;
-                        results.push({
-                            name: el.querySelector('.qBF1Pd')?.textContent?.trim(),
-                            phone: el.querySelector('.UsdlK')?.textContent?.trim(),
-                            website: websiteElement?.href || '',
-                            rating: parseFloat(el.querySelector('.MW4etd')?.textContent || '0'),
-                            reviews: parseInt(
-                                el.querySelector('.UY7F9')?.textContent?.replace(/\D/g, '') || '0'
-                            )
+                        await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+
+                        // Verifica se apareceu o texto de "fim da lista"
+                        isAtBottom = await page.evaluate(() => {
+                            return !!document.querySelector('span.HlvSq');
                         });
+
+                        attempts++;
+                    }
+
+                    // Extrair dados após scroll completo
+                    const categoryResults = await page.evaluate(() => {
+                        const results = [];
+                        const items = document.querySelectorAll('.Nv2PK');
+
+                        items.forEach((el) => {
+                            const websiteElement = el.querySelector('.lcr4fd') as HTMLAnchorElement;
+                            results.push({
+                                name: el.querySelector('.qBF1Pd')?.textContent?.trim(),
+                                phone: el.querySelector('.UsdlK')?.textContent?.trim(),
+                                website: websiteElement?.href || '',
+                                rating: parseFloat(el.querySelector('.MW4etd')?.textContent || '0'),
+                                reviews: parseInt(
+                                    el.querySelector('.UY7F9')?.textContent?.replace(/\D/g, '') || '0'
+                                )
+                            });
+                        });
+
+                        return results;
                     });
 
-                    return results;
-                });
+                    const body: Lead[] = categoryResults.map((item) => ({
+                        name: item['name'],
+                        phone: item['phone'],
+                        website: item['website'],
+                        rating: item['rating'],
+                        reviews: item['reviews'],
+                        category: category,
+                    }))
+                    console.log("Salvando", body.length)
+                    await cb(body)
+                    console.log("Salvo com sucesso", body.length)
 
-                const body: Lead[] = categoryResults.map((item) => ({
-                    name: item['name'],
-                    phone: item['phone'],
-                    website: item['website'],
-                    rating: item['rating'],
-                    reviews: item['reviews'],
-                    category: category,
-                }))
-                console.log("Salvando", body.length)
-                await cb(body)
-                console.log("Salvo com sucesso", body.length)
+                    // Delay anti-detecção
+                    await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 5000));
+                } catch (error) {
+                    console.error(`Error processing ${category} in ${bairro}:`, error);
+                    continue;
 
-                // Delay anti-detecção
-                await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 2000));
+                }
             }
+
         }
 
         await browser.close();
