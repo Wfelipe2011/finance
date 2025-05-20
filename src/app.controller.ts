@@ -29,7 +29,7 @@ export class AppController {
   }
 
   @Post('statements-credit')
-  async statementsCredit(@Body() body: Statement[]) {
+  async statementsCredit(@Body() body: any) {
     return this.statementsService.insertStatementsCredit(body);
   }
 }
