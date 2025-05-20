@@ -2,8 +2,7 @@ version: '3.8'
 
 services:
   app:
-    build: .
-    container_name: finance-scraper
+    image: wfelipe2011/finance:master
     ports:
       - '7000:7000'
     environment:
