@@ -7,8 +7,8 @@ COPY package*.json ./
 RUN npm install
 
 COPY . .
-
 RUN npm run build
+RUN npx prisma generate
 
 # Etapa de produção
 FROM node:20-slim
@@ -56,11 +56,11 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true \
 
 WORKDIR /app
 
+
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./
-RUN npx prisma generate
 EXPOSE 3000
 
 CMD ["node", "dist/main"]
