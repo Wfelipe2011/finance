@@ -2,9 +2,15 @@ version: '3.8'
 
 services:
   app:
-    image: wfelipe2011/finance:master
+    build: .
+    container_name: finance-scraper
     ports:
       - '7000:7000'
     environment:
       - DATABASE_URL=${DATABASE_URL}
-
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1536M
