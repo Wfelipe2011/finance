@@ -37,6 +37,12 @@ model BankStatement {
   type     Type
   mode     Mode
 }
+model CategoryKeyword {
+  keyword  String   @id
+  category Category
+
+  @@map("category_keywords")
+}
 
 enum Type {
   RECEBIMENTO
