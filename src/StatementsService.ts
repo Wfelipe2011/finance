@@ -22,8 +22,17 @@ export class StatementsService {
     for (const statement of statements) {
       try {
         const hash = this.gerarHash(`${statement.data}${statement.credito}${statement.debito}${statement.saldo}`)
+        const statementHash = await this.prisma.bankStatement.findFirst({
+          where: {
+            hash: hash,
+          },
+        })
+        if (statementHash) {
+          console.log('Lançamento já existe:', statementHash);
+          continue;
+        }
         const date = dayjs(statement.data, 'DD/MM/YYYY').toDate()
-        console.log('date', statement.data, date)
+        console.log('Data original:', statement.data, '| Data convertida:', date)
         await this.prisma.bankStatement.create({
           data: {
             date: date,
@@ -37,33 +46,43 @@ export class StatementsService {
             type: statement.debito > 0 ? 'PAGAMENTO' : 'RECEBIMENTO',
           },
         }).catch((e) => {
-          console.error(e)
+          console.error('Erro ao criar lançamento no banco:', e)
         })
       } catch (e) {
-        console.error(e)
+        console.error('Erro ao processar lançamento:', e)
       }
     }
   }
 
   async insertStatementsCredit(statements: Extrato) {
-    console.log('insertStatementsCredit called with:', JSON.stringify(statements, null, 2));
+    console.log('insertStatementsCredit chamado com:', JSON.stringify(statements, null, 2));
     for (const [index, statement] of statements.transacoes.entries()) {
       try {
-        console.log(`Processing transaction #${index}:`, JSON.stringify(statement, null, 2));
+        console.log(`Processando transação #${index}:`, JSON.stringify(statement, null, 2));
         const hashInput = `${statement.data}${statement.descricao}${statement.valor_brl}`;
         const hash = this.gerarHash(hashInput);
-        console.log(`Generated hash input: ${hashInput}, hash: ${hash}`);
+        console.log(`Hash gerado para entrada: ${hashInput}, hash: ${hash}`);
+        
+        const statementHash = await this.prisma.bankStatement.findFirst({
+          where: {
+            hash: hash,
+          },
+        })
+        if (statementHash) {
+          console.log('Transação já existe:', statementHash);
+          continue;
+        }
 
         // pegar ano statements.data_extrato e concatenar com statement.data
         const ano = statements.data_extrato.split('/')[2];
-        console.log(`Extracted year from data_extrato: ${ano}`);
+        console.log(`Ano extraído de data_extrato: ${ano}`);
 
         const fullDateStr = statement.data + '/' + ano;
         const date = dayjs(fullDateStr, 'DD/MM/YYYY').toDate();
-        console.log(`Parsed date string: ${fullDateStr}, Date object:`, date);
+        console.log(`Data formatada: ${fullDateStr} | Objeto Date:`, date);
 
         const category = Category[statement.categoria] || Category.OUTROS;
-        console.log(`Resolved category: ${statement.categoria} -> ${category}`);
+        console.log(`Categoria resolvida: ${statement.categoria} -> ${category}`);
 
         const dataToInsert = {
           date: date,
@@ -76,18 +95,18 @@ export class StatementsService {
           mode: 'CARTAO_CREDITO',
           type: 'PAGAMENTO',
         };
-        console.log('Data to insert into bankStatement:', JSON.stringify(dataToInsert, null, 2));
+        console.log('Dados a serem inseridos em bankStatement:', JSON.stringify(dataToInsert, null, 2));
 
         await this.prisma.bankStatement.create({
           data: dataToInsert as any,
         }).catch((e) => {
-          console.error('Error in prisma.bankStatement.create:', e);
+          console.error('Erro ao criar transação no banco:', e);
         });
       } catch (e) {
-        console.error('Error processing transaction:', e);
+        console.error('Erro ao processar transação:', e);
       }
     }
-    console.log('insertStatementsCredit finished processing all transactions.');
+    console.log('insertStatementsCredit finalizou o processamento de todas as transações.');
   }
 
   private gerarHash(data: string) {
