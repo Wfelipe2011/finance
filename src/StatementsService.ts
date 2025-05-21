@@ -1,11 +1,19 @@
 import { Injectable } from '@nestjs/common';
-import { Statement } from './app.controller';
 import { PrismaService } from './infra/prisma/prisma.service';
 import { createHash } from 'crypto';
 import * as dayjs from 'dayjs';
 import { Category } from '@prisma/client';
 const customParseFormat = require('dayjs/plugin/customParseFormat');
 dayjs.extend(customParseFormat);
+
+interface Statement {
+  data: string; // DD/MM/YYYY
+  descricao: string;
+  credito: number;
+  debito: number;
+  saldo: number;
+  categoria: Category;
+}
 
 @Injectable()
 export class StatementsService {
@@ -19,7 +27,7 @@ export class StatementsService {
         await this.prisma.bankStatement.create({
           data: {
             date: date,
-            history: statement.historico,
+            history: statement.descricao,
             credit: statement.credito,
             debit: statement.debito,
             balance: statement.saldo,
