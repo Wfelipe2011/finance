@@ -73,7 +73,11 @@ export class StatementsService {
           continue;
         }
 
-        const fullDateStr = statement.data;
+        // pegar ano statements.data_extrato e concatenar com statement.data
+        const ano = statements.data_extrato.split('/')[2];
+        console.log(`Ano extraído de data_extrato: ${ano}`);
+
+        const fullDateStr = statement.data + '/' + ano;
         const date = dayjs(fullDateStr, 'DD/MM/YYYY').toDate();
         console.log(`Data formatada: ${fullDateStr} | Objeto Date:`, date);
 
