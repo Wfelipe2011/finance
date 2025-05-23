@@ -37,21 +37,25 @@ const bairrosSorocaba = [
 @Injectable()
 export class GoogleMapsScraper {
     private categories = [
-        // 'Construtoras',
-        // 'Escritórios de advocacia',
+        'Construtoras',
+        'Escritórios de advocacia',
         'Clínicas médicas',
         'Clínicas odontológicas',
         'Consultórios',
         'Estéticas',
         'Consutorias',
         'Cursos de inglês',
+        'Agência Marketing Digital',
+        'Web Design'
     ];
 
     async scrapeSorocabaLeads(cb: (body: Lead[]) => Promise<void>) {
+        console.log('🔧 Iniciando o scraper do Google Maps...');
         const puppeteer = require('puppeteer-extra');
         const Stealth = require('puppeteer-extra-plugin-stealth')();
         puppeteer.use(Stealth);
 
+        console.log('🔧 Abrindo navegador...');
         const browser = await puppeteer.launch({
             headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox']
@@ -60,24 +64,30 @@ export class GoogleMapsScraper {
 
         // Configurações de viewport para melhor renderização
         await page.setViewport({ width: 1440, height: 900 });
+        console.log('🔧 Viewport configurado.');
 
         // Embaralha a ordem das categorias antes de processar
         const shuffledCategories = [...this.categories].sort(() => Math.random() - 0.5);
         const shuffledBairros = [...bairrosSorocaba].sort(() => Math.random() - 0.5);
+        console.log('🔧 Categorias embaralhadas:', shuffledCategories);
+        console.log('🔧 Bairros embaralhados:', shuffledBairros);
+
         for (const category of shuffledCategories) {
-            console.log(category)
+            console.log(`🔍 Iniciando busca para categoria: ${category}`);
             for (const bairro of shuffledBairros) {
                 try {
-                    console.log(bairro)
-                    await page.goto(
-                        `https://www.google.com/maps/search/${encodeURIComponent(category)}+${encodeURIComponent(bairro)}+Sorocaba+SP`,
-                        { waitUntil: 'networkidle2' }
-                    );
+                    console.log(`➡️  Buscando no bairro: ${bairro}`);
+                    const url = `https://www.google.com/maps/search/${encodeURIComponent(category)}+${encodeURIComponent(bairro)}+Sorocaba+SP`;
+                    console.log(`🌐 Navegando para URL: ${url}`);
+                    await page.goto(url, { waitUntil: 'networkidle2' });
 
+                    console.log('⏳ Aguardando seletor do container de resultados...');
                     await page.waitForSelector('.m6QErb.DxyBCb.kA9KIf.dS8AEf', { timeout: 10000 });
 
+                    console.log('⏳ Aguardando novamente seletor do container de resultados...');
                     await page.waitForSelector('.m6QErb.DxyBCb.kA9KIf.dS8AEf', { timeout: 15000 });
                     const scrollContainers = await page.$$('.m6QErb.DxyBCb.kA9KIf.dS8AEf');
+                    console.log(`🔧 Containers de scroll encontrados: ${scrollContainers.length}`);
 
                     if (scrollContainers.length < 2) {
                         console.warn('⚠️ Container de scroll não encontrado. Pulando categoria...');
@@ -90,23 +100,27 @@ export class GoogleMapsScraper {
                     let attempts = 0;
                     const maxScrolls = 1000;
 
+                    console.log('🔽 Iniciando scroll para carregar todos os resultados...');
                     while (!isAtBottom && attempts < maxScrolls) {
-                        // scrolla suavemente com scrollBy
+                        console.log(`🔽 Scroll attempt ${attempts + 1}`);
                         await page.evaluate((el) => {
                             el.scrollBy(0, 200);
                         }, scrollTarget);
 
                         await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
 
-                        // Verifica se apareceu o texto de "fim da lista"
                         isAtBottom = await page.evaluate(() => {
                             return !!document.querySelector('span.HlvSq');
                         });
 
+                        if (isAtBottom) {
+                            console.log('✅ Fim da lista detectado.');
+                        }
+
                         attempts++;
                     }
 
-                    // Extrair dados após scroll completo
+                    console.log('📝 Extraindo dados dos resultados...');
                     const categoryResults = await page.evaluate(() => {
                         const results = [];
                         const items = document.querySelectorAll('.Nv2PK');
@@ -127,6 +141,8 @@ export class GoogleMapsScraper {
                         return results;
                     });
 
+                    console.log(`🔢 Quantidade de resultados extraídos: ${categoryResults.length}`);
+
                     const body: Lead[] = categoryResults.map((item) => ({
                         name: item['name'],
                         phone: item['phone'],
@@ -135,22 +151,23 @@ export class GoogleMapsScraper {
                         reviews: item['reviews'],
                         category: category,
                     }))
-                    console.log("Salvando", body.length)
+                    console.log("💾 Salvando leads extraídos:", body.length)
                     await cb(body)
-                    console.log("Salvo com sucesso", body.length)
+                    console.log("✅ Leads salvos com sucesso:", body.length)
 
                     // Delay anti-detecção
-                    await new Promise(resolve => setTimeout(resolve, 3000 + Math.random() * 5000));
+                    const delay = 3000 + Math.random() * 5000;
+                    console.log(`⏳ Aguardando ${delay.toFixed(0)}ms para evitar detecção...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
                 } catch (error) {
-                    console.error(`Error processing ${category} in ${bairro}:`, error);
+                    console.error(`❌ Erro ao processar categoria "${category}" no bairro "${bairro}":`, error);
                     continue;
-
                 }
             }
-
+            console.log(`🏁 Finalizada a categoria: ${category}`);
         }
 
         await browser.close();
+        console.log('🛑 Navegador fechado. Scraping finalizado.');
     }
-
 }

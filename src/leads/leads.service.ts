@@ -47,6 +47,11 @@ export class LeadsService {
                 phone: { contains: "153" },
                 contacted: false,
                 deleted: false,
+                category: {
+                    notIn: [
+                        'Agência Marketing Digital'
+                    ]
+                }
             },
         });
         console.log(`[contactLeads] Found ${leadsToDelete.length} leads to delete`);
@@ -106,6 +111,28 @@ export class LeadsService {
             }
             await sleep(10000);
         }
+    }
+
+    async responseLeads(body: { phoneNumber: string, textMessage: string }) {
+        console.log('[responseLeads] Received response:', body);
+        const { phoneNumber, textMessage } = body;
+        const lead = await this.prisma.lead.findFirst({
+            where: { 
+                phone: {
+                    contains: phoneNumber.replace(/[^0-9]/g, '').replace('55', ''),
+                    mode: 'insensitive',
+                }
+            },
+        });
+        if (!lead) {
+            console.log(`[responseLeads] Lead not found for phone number: ${phoneNumber}`);
+            return;
+        }
+        await this.prisma.lead.update({
+            where: { id: lead.id },
+            data: { contacted: true, replied: true },
+        });
+        console.log(`[responseLeads] Marked lead as contacted and replied: id=${lead.id}, phone=${lead.phone}`);
     }
 
     async auth(): Promise<{ token: string }> {

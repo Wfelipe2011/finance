@@ -24,4 +24,9 @@ export class AppController {
   async statementsCredit(@Body() body: any) {
     return this.statementsService.insertStatementsCredit(body);
   }
+  
+  @Post('response-leads')
+  async responseLeads(@Body() body: { phoneNumber: string, textMessage: string }) {
+    return this.leadsService.responseLeads(body);
+  }
 }
