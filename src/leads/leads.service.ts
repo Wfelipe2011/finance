@@ -39,7 +39,7 @@ export class LeadsService {
         console.log('[refreshLeads] Leads refreshed');
     }
 
-    @Cron('0 12,13,14,17,18 * * 1-5')
+    @Cron('0 12,13,14,17,18 * * 1,2,4,5')
     async contactLeads() {
         console.log('[contactLeads] Fetching leads to delete...');
         const leadsToDelete = await this.prisma.lead.findMany({
