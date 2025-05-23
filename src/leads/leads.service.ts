@@ -39,7 +39,7 @@ export class LeadsService {
         console.log('[refreshLeads] Leads refreshed');
     }
 
-    @Cron('0 12,17 * * 1-5')
+    @Cron('0 12,15,17 * * 1-5')
     async contactLeads() {
         console.log('[contactLeads] Fetching leads to delete...');
         const leadsToDelete = await this.prisma.lead.findMany({
@@ -83,7 +83,7 @@ export class LeadsService {
         });
         console.log(`[contactLeads] Found ${leads.length} leads to contact`);
         const shuffledLeads = await this.shuffleLeads(leads);
-        const leadsToContact = shuffledLeads.slice(0, 15);
+        const leadsToContact = shuffledLeads.slice(0, 20);
         console.log('[contactLeads] Leads to contact:', leadsToContact.map(l => ({ id: l.id, phone: l.phone, website: l.website })));
         for(const lead of leadsToContact) {
            try {
