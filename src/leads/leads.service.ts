@@ -39,7 +39,7 @@ export class LeadsService {
         console.log('[refreshLeads] Leads refreshed');
     }
 
-    @Cron('0 12,15,17 * * 1-5')
+    @Cron('0 12,13,14,17,18 * * 1-5')
     async contactLeads() {
         console.log('[contactLeads] Fetching leads to delete...');
         const leadsToDelete = await this.prisma.lead.findMany({
@@ -83,33 +83,30 @@ export class LeadsService {
         });
         console.log(`[contactLeads] Found ${leads.length} leads to contact`);
         const shuffledLeads = await this.shuffleLeads(leads);
-        const leadsToContact = shuffledLeads.slice(0, 20);
+        const sliceRandom = Math.floor(Math.random() * (10 - 5 + 1)) + 5;
+        const leadsToContact = shuffledLeads.slice(0, sliceRandom);
         console.log('[contactLeads] Leads to contact:', leadsToContact.map(l => ({ id: l.id, phone: l.phone, website: l.website })));
-        for(const lead of leadsToContact) {
-           try {
-            const greeting = `Olá, tudo bem?`;
-            await this.sendMessage("55" + lead.phone, greeting);
-           } catch (error) {
-            console.error(`[contactLeads] Error processing lead ${lead.id}:`, error);
-            continue;
-           }
-           await sleep(2000);
-        }
+
         for (const lead of leadsToContact) {
             try {
-            const messageText = message(lead.category);
-            console.log(`[contactLeads] Sending message to ${lead.phone}:`, messageText);
-            await this.sendMessage("55" + lead.phone, messageText);
-            await this.prisma.lead.update({
-                where: { id: lead.id },
-                data: { contacted: true },
-            });
-            console.log(`[contactLeads] Marked lead as contacted: id=${lead.id}, phone=${lead.phone}`);
+                const greeting = `Olá, tudo bem?`;
+                await this.sendMessage("55" + lead.phone, greeting);
+                const sleepTime = Math.floor(Math.random() * (5000 - 1000 + 1)) + 1000;
+                await sleep(sleepTime);
+                const messageText = message(lead.category);
+                console.log(`[contactLeads] Sending message to ${lead.phone}:`, messageText);
+                await this.sendMessage("55" + lead.phone, messageText);
+                await this.prisma.lead.update({
+                    where: { id: lead.id },
+                    data: { contacted: true },
+                });
+                console.log(`[contactLeads] Marked lead as contacted: id=${lead.id}, phone=${lead.phone}`);
             } catch (error) {
                 console.error(`[contactLeads] Error processing lead ${lead.id}:`, error);
                 continue;
             }
-            await sleep(10000);
+            const randomTime = Math.floor(Math.random() * (20000 - 10000 + 1)) + 10000;
+            await sleep(randomTime);
         }
     }
 
@@ -117,7 +114,7 @@ export class LeadsService {
         console.log('[responseLeads] Received response:', body);
         const { phoneNumber, textMessage } = body;
         const lead = await this.prisma.lead.findFirst({
-            where: { 
+            where: {
                 phone: {
                     contains: phoneNumber.replace(/[^0-9]/g, '').replace('55', ''),
                     mode: 'insensitive',
