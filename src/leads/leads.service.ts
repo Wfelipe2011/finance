@@ -6,7 +6,13 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 @Injectable()
-export class LeadsService  {
+export class LeadsService implements OnModuleInit {
+    async onModuleInit() {
+        console.log('[LeadsService] Module initialized');
+        // await this.refreshLeads().catch((e) => console.error('[LeadsService] Error in onModuleInit:', e));
+        // await this.refreshLeads().catch((e) => console.error('[LeadsService] Error in onModuleInit:', e));
+        // await this.refreshLeads().catch((e) => console.error('[LeadsService] Error in onModuleInit:', e));
+    }
     constructor(
         private scraper: GoogleMapsScraper,
         private prisma: PrismaService
@@ -57,7 +63,6 @@ export class LeadsService  {
                         'Estéticas',
                         'Consutorias',
                         'Cursos de inglês',
-                        'Agência Marketing Digital',
                         'Web Design',
                     ]
                 }
