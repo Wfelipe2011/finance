@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { GoogleMapsScraper } from '../scraper/google-maps.scraper';
 import { PrismaService } from 'src/infra/prisma/prisma.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -6,7 +6,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 @Injectable()
-export class LeadsService {
+export class LeadsService  {
     constructor(
         private scraper: GoogleMapsScraper,
         private prisma: PrismaService
@@ -48,8 +48,17 @@ export class LeadsService {
                 contacted: false,
                 deleted: false,
                 category: {
-                    notIn: [
-                        'Agência Marketing Digital'
+                    in: [
+                        'Construtoras',
+                        'Escritórios de advocacia',
+                        'Clínicas médicas',
+                        'Clínicas odontológicas',
+                        'Consultórios',
+                        'Estéticas',
+                        'Consutorias',
+                        'Cursos de inglês',
+                        'Agência Marketing Digital',
+                        'Web Design',
                     ]
                 }
             },
