@@ -1,5 +1,5 @@
 {
-  "name": "finance-scraper",
+  "name": "finance",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -29,9 +29,6 @@
     "dayjs": "^1.11.13",
     "fast-csv": "^5.0.2",
     "prisma": "^6.7.0",
-    "puppeteer": "^24.8.1",
-    "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1"
   },

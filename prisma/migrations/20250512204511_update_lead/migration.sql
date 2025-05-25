@@ -1,5 +1,0 @@
--- AlterTable
-ALTER TABLE "Lead" ADD COLUMN     "closed" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "contacted" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "quoted" BOOLEAN NOT NULL DEFAULT false,
-ADD COLUMN     "replied" BOOLEAN NOT NULL DEFAULT false;
