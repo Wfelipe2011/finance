@@ -7,3 +7,88 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Tenants {
+  id                         Int                      @id @default(autoincrement()) @map("id")
+  nome                       String                   @map("nome")
+  usuarios                   Usuarios[]               
+  transacoes                 Transacoes[]
+  transacoesCartaoCredito    TransacoesCartaoCredito[]
+  categorias                 Categorias[]
+  palavrasChaveCategoria     PalavrasChaveCategoria[]
+
+  @@map("tenants")
+}
+
+model Usuarios {
+  id         Int       @id @default(autoincrement()) @map("id")
+  nome       String    @map("nome")
+  password   String    @map("password")
+  email      String    @unique @map("email")
+  tenantId   Int       @map("tenant_id")
+  tenant     Tenants   @relation(fields: [tenantId], references: [id])
+
+  @@map("usuarios")
+}
+
+model Transacoes {
+  id           Int             @id @default(autoincrement()) @map("id")
+  data         DateTime        @map("data")
+  descricao    String          @map("descricao")
+  valor        Float           @map("valor")
+  tipo         TipoTransacao   @map("tipo")
+  banco        String          @map("banco")
+  categoriaId  Int?            @map("categoria_id")
+  tenantId     Int             @map("tenant_id")
+
+  categoria    Categorias?     @relation(fields: [categoriaId], references: [id])
+  tenant       Tenants         @relation(fields: [tenantId], references: [id])
+
+  @@map("transacoes")
+}
+
+model TransacoesCartaoCredito {
+  id           Int             @id @default(autoincrement()) @map("id")
+  data         DateTime        @map("data")
+  descricao    String          @map("descricao")
+  valor        Float           @map("valor")
+  banco        String          @map("banco")
+  categoriaId  Int?            @map("categoria_id")
+  tenantId     Int             @map("tenant_id")
+
+  categoria    Categorias?     @relation(fields: [categoriaId], references: [id])
+  tenant       Tenants         @relation(fields: [tenantId], references: [id])
+
+  @@map("transacoes_cartao_credito")
+}
+
+model Categorias {
+  id                        Int                         @id @default(autoincrement()) @map("id")
+  nome                      String                      @map("nome")
+  tipo                      TipoTransacao              @map("tipo")
+  tenantId                  Int                         @map("tenant_id")
+  tenant                    Tenants                     @relation(fields: [tenantId], references: [id])
+
+  transacoes                Transacoes[]
+  transacoesCartaoCredito   TransacoesCartaoCredito[]
+  palavrasChave             PalavrasChaveCategoria[]
+
+  @@map("categorias")
+}
+
+model PalavrasChaveCategoria {
+  id           Int         @id @default(autoincrement()) @map("id")
+  palavra      String      @map("palavra")
+  categoriaId  Int         @map("categoria_id")
+  tenantId     Int         @map("tenant_id")
+
+  categoria    Categorias  @relation(fields: [categoriaId], references: [id])
+  tenant       Tenants     @relation(fields: [tenantId], references: [id])
+
+  @@map("palavras_chave_categoria")
+}
+
+enum TipoTransacao {
+  RECEITA
+  DESPESA
+}
