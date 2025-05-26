@@ -21,7 +21,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
         this.logger.log('✅ Banco conectado com sucesso.');
         return;
       } catch (error) {
-        this.logger.warn(`Tentativa ${6 - retries} de reconexão falhou: ${error.message}`);
+        this.logger.warn(`Tentativa ${6 - retries} de reconexão falhou: ${error['message']}`);
         retries--;
         await new Promise((res) => setTimeout(res, (5 - retries) * 1000));
       }
