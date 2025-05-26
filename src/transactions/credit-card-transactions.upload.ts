@@ -5,13 +5,36 @@ import { z } from "zod";
 const transacaoSchema = z.object({
   data: z.string().nullable(),
   descricao: z.string().nullable(),
-  credito: z.number().nullable(),
-  debito: z.number().nullable(),
-  saldo: z.number().nullable(),
-  categoria: z.string().nullable(),
+  parcela: z.string().nullable(),
+  valor_brl: z.number().nullable(),
+  categoria: z.enum([
+    "ALIMENTACAO",
+    "SAUDE",
+    "TRANSPORTE",
+    "LAZER",
+    "EDUCACAO",
+    "SERVICOS",
+    "OUTROS",
+    "PETS",
+    "SALARIO",
+    "INVESTIMENTOS",
+    "CARTAO_CREDITO",
+    "CARTAO_DEBITO",
+    "FERIAS",
+    "IMPOSTOS",
+    "CONTAS",
+    "UTILIDADES",
+    "VIAGEM",
+    "DOACOES",
+    "DESPESAS_FIXAS",
+    "DESPESAS_VARIAVEIS",
+    "OUTRAS_RECEITAS"
+  ]).nullable(),
 });
 
 const responseSchema = z.object({
+  banco: z.string().nullable(),
+  data_extrato: z.string().nullable().describe("date in DD/MM/YYYY format"),
   transacoes: z.array(transacaoSchema),
 });
 
@@ -25,7 +48,7 @@ export class CreditCardTransactionsUploadService {
     return this.callGeminiAPI(promptPayload);
   }
 
-  private async callGeminiAPI(body: any) {
+  private async callGeminiAPI(body: object) {
     try {
       const response = await this.httpService.axiosRef.post(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
@@ -42,7 +65,7 @@ export class CreditCardTransactionsUploadService {
       const { candidates } = response.data;
       const data = candidates[0].content.parts[0].text;
       const parsedData = responseSchema.parse(JSON.parse(data));
-      return parsedData;
+      return parsedData
     } catch (error) {
       console.error('Error calling Gemini API:', error);
       throw new Error('Failed to call Gemini API');
@@ -61,7 +84,7 @@ export class CreditCardTransactionsUploadService {
               }
             },
             {
-              "text": `You are a data extraction agent who is helping to extract information from a credit card statement and you are an expert in categorizing credit card purchases. The available categories are: ALIMENTACAO, SAUDE, TRANSPORTE, LAZER, EDUCACAO, SERVICOS, OUTROS, DONATIVOS, PETS.`
+              "text": `You are a data extraction agent who is helping to extract information from a credit card statement and you are an expert in categorizing credit card purchases. The available categories are: ALIMENTACAO,SAUDE,TRANSPORTE,LAZER,EDUCACAO,SERVICOS,OUTROS,PETS,SALARIO,INVESTIMENTOS,CARTAO_CREDITO,CARTAO_DEBITO,FERIAS,IMPOSTOS,CONTAS,UTILIDADES,VIAGEM,DOACOES,DESPESAS_FIXAS,DESPESAS_VARIAVEIS,OUTRAS_RECEITAS`
             }
           ]
         }
@@ -71,21 +94,13 @@ export class CreditCardTransactionsUploadService {
         "response_schema": {
           "type": "OBJECT",
           "required": [
-            "aplicativo",
+            "banco",
             "data_extrato",
-            "situacao",
-            "titular",
-            "cartao",
-            "transacoes",
-            "total_brl"
+            "transacoes"
           ],
           "properties": {
-            "aplicativo": { "type": "string" },
+            "banco": { "type": "string" },
             "data_extrato": { "type": "string", "nullable": true, "description": "date in DD/MM/YYYY format" },
-            "situacao": { "type": "string", "nullable": true },
-            "titular": { "type": "string", "nullable": true },
-            "cartao": { "type": "string", "nullable": true },
-            "total_brl": { "type": "number", "nullable": true },
             "transacoes": {
               "type": "array",
               "items": {
@@ -93,14 +108,14 @@ export class CreditCardTransactionsUploadService {
                 "required": [
                   "data",
                   "descricao",
-                  "valor_usd",
+                  "parcela",
                   "valor_brl",
                   "categoria"
                 ],
                 "properties": {
-                  "data": { "type": "string", "nullable": true, "description": "date in DD/MM format" },
+                  "data": { "type": "string", "nullable": true, "description": "date in DD/MM or DD/MM/YYYY format" },
                   "descricao": { "type": "string", "nullable": true },
-                  "valor_usd": { "type": "number", "nullable": true },
+                  "parcela": { "type": "string", "nullable": true },
                   "valor_brl": { "type": "number", "nullable": true },
                   "categoria": {
                     "type": "string",
@@ -112,8 +127,20 @@ export class CreditCardTransactionsUploadService {
                       "EDUCACAO",
                       "SERVICOS",
                       "OUTROS",
-                      "DONATIVOS",
-                      "PETS"
+                      "PETS",
+                      "SALARIO",
+                      "INVESTIMENTOS",
+                      "CARTAO_CREDITO",
+                      "CARTAO_DEBITO",
+                      "FERIAS",
+                      "IMPOSTOS",
+                      "CONTAS",
+                      "UTILIDADES",
+                      "VIAGEM",
+                      "DOACOES",
+                      "DESPESAS_FIXAS",
+                      "DESPESAS_VARIAVEIS",
+                      "OUTRAS_RECEITAS"
                     ],
                     "nullable": true
                   }

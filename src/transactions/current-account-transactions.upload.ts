@@ -3,6 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { z } from "zod";
 
 const transacaoSchema = z.object({
+  banco: z.string().nullable(),
   data: z.string().nullable(),
   descricao: z.string().nullable(),
   credito: z.number().nullable(),
@@ -18,14 +19,14 @@ const responseSchema = z.object({
 @Injectable()
 export class CurrentAccountTransactionsUploadService {
   constructor(readonly httpService: HttpService) { }
- 
+
   async uploadFile(file: Express.Multer.File) {
     const fileContent = file.buffer.toString('base64');
     const promptPayload = this.generatePrompt(fileContent);
     return this.callGeminiAPI(promptPayload);
   }
 
-  private async callGeminiAPI(body: any) {
+  private async callGeminiAPI(body: object) {
     try {
       const response = await this.httpService.axiosRef.post(
         'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
@@ -42,7 +43,7 @@ export class CurrentAccountTransactionsUploadService {
       const { candidates } = response.data;
       const data = candidates[0].content.parts[0].text;
       const parsedData = responseSchema.parse(JSON.parse(data));
-      return parsedData;
+      return parsedData
     } catch (error) {
       console.error('Error calling Gemini API:', error);
       throw new Error('Failed to call Gemini API');
@@ -79,6 +80,7 @@ export class CurrentAccountTransactionsUploadService {
               "items": {
                 "type": "object",
                 "required": [
+                  "banco",
                   "data",
                   "descricao",
                   "credito",
@@ -87,6 +89,10 @@ export class CurrentAccountTransactionsUploadService {
                   "categoria"
                 ],
                 "properties": {
+                  "banco": {
+                    "type": "string",
+                    "nullable": true
+                  },
                   "data": {
                     "type": "string",
                     "nullable": true
@@ -109,6 +115,29 @@ export class CurrentAccountTransactionsUploadService {
                   },
                   "categoria": {
                     "type": "string",
+                    "enum": [
+                      "ALIMENTACAO",
+                      "SAUDE",
+                      "TRANSPORTE",
+                      "LAZER",
+                      "EDUCACAO",
+                      "SERVICOS",
+                      "OUTROS",
+                      "PETS",
+                      "SALARIO",
+                      "INVESTIMENTOS",
+                      "CARTAO_CREDITO",
+                      "CARTAO_DEBITO",
+                      "FERIAS",
+                      "IMPOSTOS",
+                      "CONTAS",
+                      "UTILIDADES",
+                      "VIAGEM",
+                      "DOACOES",
+                      "DESPESAS_FIXAS",
+                      "DESPESAS_VARIAVEIS",
+                      "OUTRAS_RECEITAS"
+                    ],
                     "nullable": true
                   }
                 }
