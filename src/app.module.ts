@@ -24,9 +24,7 @@ export class AppModule implements NestModule {
   private readonly logger = new Logger(AppModule.name);
 
   constructor(
-    private readonly als: AsyncLocalStorage<{
-      user: UserToken;
-    }>,
+    private readonly als: AsyncLocalStorage<UserToken>,
   ) { }
 
   configure(consumer: MiddlewareConsumer) {
@@ -39,10 +37,8 @@ export class AppModule implements NestModule {
           if (token) {
             const payload = AuthGuard.validateToken(token);
             this.logger.debug(`[Middleware] Token payload: ${JSON.stringify(payload)}`);
-            const store = {
-              user: payload
-            };
-            this.als.run(store, () => {
+            
+            this.als.run(payload, () => {
               this.logger.debug(`[Middleware] ALS context set for user: ${JSON.stringify(payload)}`);
               next();
             });
