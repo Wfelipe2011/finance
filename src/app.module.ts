@@ -10,6 +10,7 @@ import { AsyncLocalStorage } from 'async_hooks';
 import { UserToken } from '@auth/contracts';
 import { Logger } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { PrismaConnectionMiddleware } from '@infra/prisma/prisma-connection.middleware';
 
 @Module({
   imports: [AlsModule, PrismaModule, AuthModule, TransactionsModule, ScheduleModule.forRoot()],
@@ -50,5 +51,6 @@ export class AppModule implements NestModule {
         }
       })
       .forRoutes('*path');
+     consumer.apply(PrismaConnectionMiddleware).forRoutes('*');
   }
 }
