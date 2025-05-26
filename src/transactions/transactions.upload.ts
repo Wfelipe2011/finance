@@ -35,7 +35,7 @@ export class TransactionsUploadService {
             'Content-Type': 'application/json',
           },
           params: {
-            key: process.env.GOOGLE_API_KEY, // Ensure you have set this environment variable
+            key: process.env['GOOGLE_API_KEY'], // Ensure you have set this environment variable
           },
         }
       )

@@ -1,13 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '@infra/prisma/prisma.service';
-import { TipoArquivo, TipoStatus } from '@prisma/client';
-import { CurrentAccountTransactionsUploadService } from './current-account-transactions.upload';
-import { CreditCardTransactionsUploadService } from './credit-card-transactions.upload';
 import _ from 'lodash';
 import { generateHash } from './generateHash';
+
+import { CreditCardInput, CurrentAccountInput } from './handler-transactions.service';
+import { TipoCategoria, TipoTransacao } from '@prisma/client';
+import { chronoParse } from './chrono';
 
 @Injectable()
 export class TransactionsService {
@@ -15,9 +15,7 @@ export class TransactionsService {
 
   constructor(
     readonly prismaService: PrismaService,
-    readonly currentAccountTransactionsUploadService: CurrentAccountTransactionsUploadService,
-    readonly creditCardTransactionsUploadService: CreditCardTransactionsUploadService
-  ) { this.handlerTransactions() }
+  ) { }
 
   create(createTransactionDto: CreateTransactionDto) {
     this.logger.debug('Criando uma nova transação');
@@ -39,89 +37,79 @@ export class TransactionsService {
     return `Esta ação atualiza a transação #${id}`;
   }
 
-  @Cron(CronExpression.EVERY_5_MINUTES)
-  async handlerTransactions() {
-    this.logger.log('Iniciando o job handlerTransactions');
-    const files = await this.prismaService.arquivos.findMany({
-      where: {
-        status: TipoStatus.PENDENTE,
-      },
-      select: {
-        id: true,
-        tipo: true,
-      }
-    });
-
-    this.logger.debug(`Encontrados ${files.length} arquivos pendentes`);
-
-    for (const file of files) {
-      this.logger.debug(`Processando arquivo com id: ${file.id}, tipo: ${file.tipo}`);
-      const fileDetails = await this.prismaService.arquivos.findUnique({
-        where: { id: file.id },
-      });
-
-      if (file.tipo === TipoArquivo.EXTRATO_BANCARIO) {
-        this.logger.debug(`Arquivo ${file.id} é um extrato bancário`);
-        await this.prismaService.arquivos.update({
-          where: { id: file.id },
-          data: { status: TipoStatus.PROCESSANDO },
+  async createCurrentAccountTransaction(input: CurrentAccountInput, tenantId: number): Promise<void> {
+    for (const transacao of input.transacoes) {
+      try {
+        const data = await chronoParse(transacao.data);
+        if (!data) {
+          this.logger.warn(`Data inválida para transação: ${JSON.stringify(transacao)}`);
+          continue;
+        }
+        this.logger.debug(`Criando transação bancária: ${JSON.stringify(transacao)}`);
+        const hash = generateHash(`${transacao.data}${transacao.descricao.substring(0, 5).toUpperCase()}${transacao.credito}${transacao.debito}${transacao.saldo}`);
+        const existingTransaction = await this.prismaService.transacoes.findFirst({
+          where: {
+            id: hash,
+            tenantId,
+          },
         });
-        this.logger.debug(`Arquivo ${file.id} status atualizado para PROCESSANDO`);
-        const [res1, res2] = await Promise.all([
-          this.currentAccountTransactionsUploadService.uploadFile(Buffer.from(fileDetails.conteudo).toString('base64')),
-          this.currentAccountTransactionsUploadService.uploadFile(Buffer.from(fileDetails.conteudo).toString('base64')),
-        ]);
-        const bodyHash = (transacoes: { banco?: string; data?: string; descricao?: string; credito?: number; debito?: number; saldo?: number; categoria?: string; }) =>
-          (generateHash(`${transacoes.data}${transacoes.descricao.substring(0, 5)}${transacoes.credito}${transacoes.debito}${transacoes.saldo}`))
-        const areEqual = _.isEqual(res1.transacoes.map(bodyHash), res2.transacoes.map(bodyHash));
-        this.logger.debug(`Resultados do upload para o arquivo ${file.id}: res1=${JSON.stringify(res1)}, res2=${JSON.stringify(res2)}`);
-        this.logger.debug(`Resultado da comparação para o arquivo ${file.id}: ${areEqual}`);
-        if (areEqual) {
-          await this.prismaService.arquivos.update({
-            where: { id: file.id },
-            data: { status: TipoStatus.CONCLUIDO },
-          });
-          this.logger.log(`Arquivo ${file.id} status atualizado para CONCLUIDO`);
-          // chamar o serviço de criação de transações
-        } else {
-          await this.prismaService.arquivos.update({
-            where: { id: file.id },
-            data: { status: TipoStatus.PENDENTE },
-          });
-          this.logger.warn(`Resultados do upload do arquivo ${file.id} não são iguais, status revertido para PENDENTE`);
+        if (existingTransaction) {
+          this.logger.debug(`Transação já existe: ${existingTransaction.id}`);
+          continue;
         }
-      } else if (file.tipo === TipoArquivo.FATURA_CARTAO_CREDITO) {
-        this.logger.debug(`Arquivo ${file.id} é uma fatura de cartão de crédito`);
-        const [res1, res2] = await Promise.all([
-          await this.creditCardTransactionsUploadService.uploadFile(Buffer.from(fileDetails.conteudo).toString('base64')),
-          await this.creditCardTransactionsUploadService.uploadFile(Buffer.from(fileDetails.conteudo).toString('base64')),
-        ]);
-
-        const bodyHash = (transacoes: { data?: string; descricao?: string; parcela?: string; valor_brl?: number;}) => (generateHash(`${transacoes.data}${transacoes.descricao.substring(0, 5)}${transacoes.parcela}${transacoes.valor_brl}`));
-        this.logger.debug(`Resultados do upload para o arquivo ${file.id}: res1=${JSON.stringify(res1)}, res2=${JSON.stringify(res2)}`);
-        const areEqual = _.isEqual(res1.transacoes.map(bodyHash), res2.transacoes.map(bodyHash));
-        this.logger.debug(`Hash das transações do arquivo ${file.id}: res1=${res1.transacoes.map(bodyHash)}, res2=${res2.transacoes.map(bodyHash)}`);
-        this.logger.debug(`Resultado da comparação para o arquivo ${file.id}: ${areEqual}`);
-        if (areEqual) {
-          await this.prismaService.arquivos.update({
-            where: { id: file.id },
-            data: { status: TipoStatus.CONCLUIDO },
-          });
-          this.logger.log(`Arquivo ${file.id} status atualizado para CONCLUIDO`);
-          // chamar o serviço de criação de transações
-        }
-        else {
-          await this.prismaService.arquivos.update({
-            where: { id: file.id },
-            data: { status: TipoStatus.PENDENTE },
-          });
-          this.logger.warn(`Resultados do upload do arquivo ${file.id} não são iguais, status revertido para PENDENTE`);
-        }
+        await this.prismaService.transacoes.create({
+          data: {
+            id: hash,
+            data: data,
+            descricao: transacao.descricao,
+            banco: transacao.banco.toUpperCase(),
+            valor: transacao.credito || transacao.debito,
+            tipo: transacao.credito ? TipoTransacao.RECEITA : TipoTransacao.DESPESA,
+            categoria: TipoCategoria[transacao.categoria] || TipoCategoria.OUTROS,
+            tenantId,
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Erro ao criar transação bancária: ${JSON.stringify(transacao)}`, error);
       }
     }
-    this.logger.log('Handler de transações executado com sucesso');
-    return 'Handler de transações executado com sucesso';
+    return;
   }
 
-
+  async createCreditCardTransaction(input: CreditCardInput, tenantId: number): Promise<void> {
+    for (const transacao of input.transacoes) {
+      try {
+        const data = await chronoParse(transacao.data);
+        if (!data) {
+          this.logger.warn(`Data inválida para transação: ${JSON.stringify(transacao)}`);
+          continue;
+        }
+        this.logger.debug(`Criando transação de cartão de crédito: ${JSON.stringify(transacao)}`);
+        const hash = generateHash(`${transacao.data}${transacao.descricao.substring(0, 5).toUpperCase()}${transacao.parcela}${transacao.valor_brl}`);
+        const existingTransaction = await this.prismaService.transacoes.findFirst({
+          where: {
+            id: hash,
+            tenantId,
+          },
+        });
+        if (existingTransaction) {
+          this.logger.debug(`Transação de cartão de crédito já existe: ${existingTransaction.id}`);
+          continue;
+        }
+        await this.prismaService.transacoesCartaoCredito.create({
+          data: {
+            id: hash,
+            data: data,
+            descricao: transacao.descricao,
+            categoria: TipoCategoria[transacao.categoria] || TipoCategoria.OUTROS,
+            valor: transacao.valor_brl,
+            banco: input.banco.toUpperCase(),
+            tenantId,
+          },
+        });
+      } catch (error) {
+        this.logger.error(`Erro ao criar transação de cartão de crédito: ${JSON.stringify(transacao)}`, error);
+      }
+    }
+  }
 }

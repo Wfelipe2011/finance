@@ -42,11 +42,6 @@ export class TransactionsController {
     return this.transactionsService.update(+id, updateTransactionDto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.transactionsService.remove(+id);
-  }
-
   @Post('upload/current-account')
   @UseInterceptors(FileInterceptor('file'))
   async uploadCurrentAccount(@UploadedFile() file: Express.Multer.File) {

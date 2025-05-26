@@ -7,18 +7,7 @@ const transacaoSchema = z.object({
   descricao: z.string().nullable(),
   parcela: z.string().nullable(),
   valor_brl: z.number().nullable(),
-  categoria: z.enum([
-    "ALIMENTACAO",
-    "SAUDE",
-    "TRANSPORTE",
-    "LAZER",
-    "EDUCACAO",
-    "SERVICOS",
-    "OUTROS",
-    "PETS",
-    "CONTAS",
-    "UTILIDADES"
-  ]).nullable(),
+  categoria: z.string().nullable(),
 });
 
 const responseSchema = z.object({
@@ -46,7 +35,7 @@ export class CreditCardTransactionsUploadService {
             'Content-Type': 'application/json',
           },
           params: {
-            key: process.env.GOOGLE_API_KEY, // Ensure you have set this environment variable
+            key: process.env['GOOGLE_API_KEY'], // Ensure you have set this environment variable
           },
         }
       )
@@ -72,7 +61,7 @@ export class CreditCardTransactionsUploadService {
               }
             },
             {
-              "text": `You are a data extraction agent who is helping to extract information from a credit card statement and you are an expert in categorizing credit card purchases. The available categories are: ALIMENTACAO,SAUDE,TRANSPORTE,LAZER,EDUCACAO,SERVICOS,OUTROS,PETS`
+              "text": `You are a data extraction agent who is helping to extract information from a credit card statement and you are an expert in categorizing credit card purchases. The available categories are: ALIMENTACAO, SAUDE, TRANSPORTE, SERVICOS, SALDO, OUTROS e PAGAMENTO_FATURA.`
             }
           ]
         }
@@ -111,24 +100,10 @@ export class CreditCardTransactionsUploadService {
                       "ALIMENTACAO",
                       "SAUDE",
                       "TRANSPORTE",
-                      "LAZER",
-                      "EDUCACAO",
                       "SERVICOS",
                       "OUTROS",
-                      "PETS",
-                      "SALARIO",
-                      "INVESTIMENTOS",
-                      "CARTAO_CREDITO",
-                      "CARTAO_DEBITO",
-                      "FERIAS",
-                      "IMPOSTOS",
-                      "CONTAS",
-                      "UTILIDADES",
-                      "VIAGEM",
-                      "DOACOES",
-                      "DESPESAS_FIXAS",
-                      "DESPESAS_VARIAVEIS",
-                      "OUTRAS_RECEITAS"
+                      "PAGAMENTO_FATURA",
+                      "SALDO"
                     ],
                     "nullable": true
                   }

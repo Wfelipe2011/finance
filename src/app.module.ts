@@ -9,9 +9,10 @@ import { AlsModule } from '@infra/prisma/als.module';
 import { AsyncLocalStorage } from 'async_hooks';
 import { UserToken } from '@auth/contracts';
 import { Logger } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
-  imports: [AlsModule, PrismaModule, AuthModule, TransactionsModule],
+  imports: [AlsModule, PrismaModule, AuthModule, TransactionsModule, ScheduleModule.forRoot()],
   controllers: [],
   providers: [
     {

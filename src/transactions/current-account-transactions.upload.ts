@@ -35,7 +35,7 @@ export class CurrentAccountTransactionsUploadService {
             'Content-Type': 'application/json',
           },
           params: {
-            key: process.env.GOOGLE_API_KEY, // Ensure you have set this environment variable
+            key: process.env['GOOGLE_API_KEY'], // Ensure you have set this environment variable
           },
         }
       )
@@ -61,7 +61,7 @@ export class CurrentAccountTransactionsUploadService {
               }
             },
             {
-              "text": `You are a data extraction agent who is helping to extract information from a Bradesco current account statement and you are an expert in categorizing credit card purchases. The options are:ALIMENTACAO,SAUDE,TRANSPORTE,LAZER,EDUCACAO,SERVICOS,OUTROS,DONATIVOS,PETS`
+              "text": `You are a data extraction agent who is helping to extract information from a Bradesco current account statement and you are an expert in categorizing credit card purchases. The options are: ALIMENTACAO, SAUDE, TRANSPORTE, SERVICOS, OUTROS e RECEITA.`
             }
           ]
         }
@@ -118,11 +118,9 @@ export class CurrentAccountTransactionsUploadService {
                       "ALIMENTACAO",
                       "SAUDE",
                       "TRANSPORTE",
-                      "LAZER",
-                      "EDUCACAO",
                       "SERVICOS",
                       "OUTROS",
-                      "SALARIO"
+                      "RECEITA"
                     ],
                     "nullable": true
                   }

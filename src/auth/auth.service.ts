@@ -29,7 +29,7 @@ export class AuthService {
         userName: user.nome,
         tenantId: user.tenantId,
       },
-      process.env.JWT_SECRET,
+      process.env['JWT_SECRET'],
       {
         expiresIn: '1d',
       }

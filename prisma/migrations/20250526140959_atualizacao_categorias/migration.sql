@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "TipoCategoria" ADD VALUE 'PAGAMENTO_FATURA';
