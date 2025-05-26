@@ -20,9 +20,8 @@ const responseSchema = z.object({
 export class CurrentAccountTransactionsUploadService {
   constructor(readonly httpService: HttpService) { }
 
-  async uploadFile(file: Express.Multer.File) {
-    const fileContent = file.buffer.toString('base64');
-    const promptPayload = this.generatePrompt(fileContent);
+  async uploadFile(file: string) {
+    const promptPayload = this.generatePrompt(file);
     return this.callGeminiAPI(promptPayload);
   }
 
@@ -123,20 +122,7 @@ export class CurrentAccountTransactionsUploadService {
                       "EDUCACAO",
                       "SERVICOS",
                       "OUTROS",
-                      "PETS",
-                      "SALARIO",
-                      "INVESTIMENTOS",
-                      "CARTAO_CREDITO",
-                      "CARTAO_DEBITO",
-                      "FERIAS",
-                      "IMPOSTOS",
-                      "CONTAS",
-                      "UTILIDADES",
-                      "VIAGEM",
-                      "DOACOES",
-                      "DESPESAS_FIXAS",
-                      "DESPESAS_VARIAVEIS",
-                      "OUTRAS_RECEITAS"
+                      "SALARIO"
                     ],
                     "nullable": true
                   }

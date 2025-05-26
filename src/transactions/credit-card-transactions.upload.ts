@@ -16,19 +16,8 @@ const transacaoSchema = z.object({
     "SERVICOS",
     "OUTROS",
     "PETS",
-    "SALARIO",
-    "INVESTIMENTOS",
-    "CARTAO_CREDITO",
-    "CARTAO_DEBITO",
-    "FERIAS",
-    "IMPOSTOS",
     "CONTAS",
-    "UTILIDADES",
-    "VIAGEM",
-    "DOACOES",
-    "DESPESAS_FIXAS",
-    "DESPESAS_VARIAVEIS",
-    "OUTRAS_RECEITAS"
+    "UTILIDADES"
   ]).nullable(),
 });
 
@@ -42,9 +31,8 @@ const responseSchema = z.object({
 export class CreditCardTransactionsUploadService {
   constructor(readonly httpService: HttpService) { }
 
-  async uploadFile(file: Express.Multer.File) {
-    const fileContent = file.buffer.toString('base64');
-    const promptPayload = this.generatePrompt(fileContent);
+  async uploadFile(file: string) {
+    const promptPayload = this.generatePrompt(file);
     return this.callGeminiAPI(promptPayload);
   }
 
@@ -84,7 +72,7 @@ export class CreditCardTransactionsUploadService {
               }
             },
             {
-              "text": `You are a data extraction agent who is helping to extract information from a credit card statement and you are an expert in categorizing credit card purchases. The available categories are: ALIMENTACAO,SAUDE,TRANSPORTE,LAZER,EDUCACAO,SERVICOS,OUTROS,PETS,SALARIO,INVESTIMENTOS,CARTAO_CREDITO,CARTAO_DEBITO,FERIAS,IMPOSTOS,CONTAS,UTILIDADES,VIAGEM,DOACOES,DESPESAS_FIXAS,DESPESAS_VARIAVEIS,OUTRAS_RECEITAS`
+              "text": `You are a data extraction agent who is helping to extract information from a credit card statement and you are an expert in categorizing credit card purchases. The available categories are: ALIMENTACAO,SAUDE,TRANSPORTE,LAZER,EDUCACAO,SERVICOS,OUTROS,PETS`
             }
           ]
         }
