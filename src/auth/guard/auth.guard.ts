@@ -7,29 +7,29 @@ import { UserToken } from '../contracts';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  logger = new Logger(AuthGuard.name);
+  static logger = new Logger(AuthGuard.name);
   constructor(private reflector: Reflector) {}
   canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getHandler(), context.getClass()]);
     const request = context.switchToHttp().getRequest<any>();
     if (isPublic) {
-      this.logger.log(`Rota pública - ${request.url} - ${request.method}`);
+      AuthGuard.logger.log(`Rota pública - ${request.url} - ${request.method}`);
       return true;
     }
-    const token = this.extractTokenFromHeader(request);
+    const token = AuthGuard.extractTokenFromHeader(request);
     if (!token) {
       throw new UnauthorizedException('Não autorizado');
     }
 
-    this.logger.log(`Rota privada - ${request.url} - ${request.method} - ${token}`);
+    AuthGuard.logger.log(`Rota privada - ${request.url} - ${request.method} - ${token}`);
 
-    const payload = this.validateToken(token);
+    const payload = AuthGuard.validateToken(token);
     request['user'] = payload;
 
     return true;
   }
 
-  private extractTokenFromHeader(request: any): string | undefined {
+  static extractTokenFromHeader(request: any): string | undefined {
     let token = '';
     if (request?.headers?.authorization) {
       token = request?.headers?.authorization;
@@ -40,12 +40,12 @@ export class AuthGuard implements CanActivate {
     return token.replace('Bearer ', '');
   }
 
-  validateToken(token: string) {
+  static validateToken(token: string) {
     try {
       const payload = jwt.verify(token, process.env.JWT_SECRET);
       return payload as UserToken;
     } catch (error) {
-      this.logger.error(`Token inválido: ${error['message']} - Token: ${token}`);
+      AuthGuard.logger.error(`Token inválido: ${error['message']} - Token: ${token}`);
       throw new UnauthorizedException(`Token inválido: ${error['message']}`);
     }
   }
