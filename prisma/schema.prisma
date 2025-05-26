@@ -17,6 +17,7 @@ model Tenants {
   palavrasChaveCategoria  PalavrasChaveCategoria[]
 
   @@map("tenants")
+  Arquivos Arquivos[]
 }
 
 model Usuarios {
@@ -66,6 +67,31 @@ model PalavrasChaveCategoria {
   tenant    Tenants       @relation(fields: [tenantId], references: [id])
 
   @@map("palavras_chave_categoria")
+}
+
+model Arquivos {
+  id         String      @id @map("id")
+  nome       String      @map("nome")
+  conteudo   Bytes       @map("conteudo") // Armazena o arquivo binário (PDF, imagem, etc.)
+  dataUpload DateTime    @default(now()) @map("data_upload")
+  tipo       TipoArquivo @map("tipo")
+  status     TipoStatus  @default(PENDENTE) @map("status")
+  tenantId   Int         @map("tenant_id")
+  tenant     Tenants     @relation(fields: [tenantId], references: [id])
+
+  @@map("arquivos") // Nome da tabela no banco: faturas
+}
+
+enum TipoStatus {
+  PENDENTE
+  PROCESSANDO
+  CONCLUIDO
+  ERRO
+}
+
+enum TipoArquivo {
+  EXTRATO_BANCARIO
+  FATURA_CARTAO_CREDITO
 }
 
 enum TipoTransacao {
