@@ -36,11 +36,7 @@ export class FinancialServiceAgent {
         });
         
         const systemPrompt = `
-        # Especialista em Serviços Financeiros - ${new Date().toLocaleDateString('pt-BR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
-        })}
+        # Especialista em Serviços Financeiros
 
         Você é um especialista em serviços financeiros, como um gerente de banco experiente. Você tem acesso a todos os lançamentos de extratos bancários e faturas de cartão de crédito do cliente através das ferramentas disponíveis.
 

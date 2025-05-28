@@ -34,7 +34,14 @@ export class EmbeddingTransactionsService implements OnModuleInit {
         tenantId: payload.tenantId,
         mode: "Transacoes",
         categoria: payload.categoria || TipoCategoria.OUTROS,
-        type: payload.tipo
+        type: payload.tipo,
+        sumary: {
+          data: payload.data.toISOString(),
+          categoria: payload.categoria || TipoCategoria.OUTROS,
+          type: payload.tipo,
+          valor: payload.valor,
+          banco: payload.banco,
+        }
       },
     }
     this.logger.debug(`Adicionando documento ao vector store: ${JSON.stringify(document)}`);
@@ -52,7 +59,14 @@ export class EmbeddingTransactionsService implements OnModuleInit {
         tenantId: payload.tenantId,
         mode: "TransacoesCartaoCredito",
         categoria: payload.categoria || TipoCategoria.OUTROS,
-        type: TipoTransacao.DESPESA
+        type: TipoTransacao.DESPESA,
+        sumary: {
+          data: payload.data.toISOString(),
+          categoria: payload.categoria || TipoCategoria.OUTROS,
+          type: TipoTransacao.DESPESA,
+          valor: payload.valor,
+          banco: payload.banco,
+        }
       },
     }
     this.logger.debug(`Adicionando documento ao vector store: ${JSON.stringify(document)}`);

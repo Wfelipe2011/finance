@@ -32,15 +32,14 @@ export const StatementCreditCardRetrievalTool = new DynamicStructuredTool({
         try {
             const retriever = vectorStore.asRetriever({
                 filter: { tenantId: tenantId, type, categoria, mode: 'TransacoesCartaoCredito' },
-                verbose: true,
                 k: 100
             });
 
             const results: Document[] = await retriever.invoke(query);
 
-            const pageContents = results.map(doc => `${doc.pageContent} - Metadata: ${JSON.stringify(doc.metadata)}`);
+            const pageContents = results.map(doc => doc.metadata['sumary'] as object);
             logger.debug(`Retornados ${pageContents.length} extratos.`);
-            return pageContents.join("\n---\n");
+            return JSON.stringify(pageContents);
 
         } catch (error) {
             logger.error(`Erro ao buscar extratos no PGVectorStore: ${error}`);

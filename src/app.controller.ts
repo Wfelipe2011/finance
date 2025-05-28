@@ -19,7 +19,12 @@ export class AppController {
   constructor(
     private prisma: PrismaService,
     private eventEmitter: EventEmitter2,
-  ) {}
+  ) {
+    // setTimeout(() => {
+    //   this.seed().catch(err => console.error('Error seeding transactions:', err));
+    // }
+    // , 10000);
+  }
 
   async seed(){
     const transactionCard = await this.prisma.transacoesCartaoCredito.findMany()
