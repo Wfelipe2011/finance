@@ -5,10 +5,11 @@ import { HttpModule } from '@nestjs/axios';
 import { CurrentAccountTransactionsUploadService } from './current-account-transactions.upload';
 import { CreditCardTransactionsUploadService } from './credit-card-transactions.upload';
 import { HandlerTransactionsService } from './handler-transactions.service';
+import { EmbeddingTransactionsService } from './embedding-transactions.service';
 
 @Module({
   imports: [HttpModule],
   controllers: [TransactionsController],
-  providers: [TransactionsService, CurrentAccountTransactionsUploadService, CreditCardTransactionsUploadService, HandlerTransactionsService],
+  providers: [TransactionsService, CurrentAccountTransactionsUploadService, CreditCardTransactionsUploadService, HandlerTransactionsService, EmbeddingTransactionsService],
 })
 export class TransactionsModule {}

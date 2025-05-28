@@ -16,6 +16,8 @@
       "@modules/*": ["src/modules/*"],
       "@infra/*": ["src/infra/*"],
       "@decorators/*": ["src/decorators/*"],
+      "@agents/*": ["src/agents/*"],
+      "@tools/*": ["src/tools/*"],
     },
     "incremental": true,
     "skipLibCheck": true,

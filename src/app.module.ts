@@ -11,15 +11,17 @@ import { UserToken } from '@auth/contracts';
 import { Logger } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaConnectionMiddleware } from '@infra/prisma/prisma-connection.middleware';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { AppController } from './app.controller';
 
 @Module({
-  imports: [AlsModule, PrismaModule, AuthModule, TransactionsModule, ScheduleModule.forRoot()],
-  controllers: [],
+  imports: [AlsModule, PrismaModule, AuthModule, TransactionsModule, ScheduleModule.forRoot(), EventEmitterModule.forRoot()],
+  controllers: [AppController],
   providers: [
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
-    }
+    },
   ],
 })
 export class AppModule implements NestModule {
@@ -39,7 +41,7 @@ export class AppModule implements NestModule {
           if (token) {
             const payload = AuthGuard.validateToken(token);
             this.logger.debug(`[Middleware] Token payload: ${JSON.stringify(payload)}`);
-            
+
             this.als.run(payload, () => {
               this.logger.debug(`[Middleware] ALS context set for user: ${JSON.stringify(payload)}`);
               next();
@@ -51,6 +53,6 @@ export class AppModule implements NestModule {
         }
       })
       .forRoutes('*path');
-     consumer.apply(PrismaConnectionMiddleware).forRoutes('*');
+    consumer.apply(PrismaConnectionMiddleware).forRoutes('*');
   }
 }

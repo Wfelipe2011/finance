@@ -8,6 +8,7 @@ import { generateHash } from './generateHash';
 import { CreditCardInput, CurrentAccountInput } from './handler-transactions.service';
 import { TipoCategoria, TipoTransacao } from '@prisma/client';
 import { chronoParse } from './chrono';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class TransactionsService {
@@ -15,6 +16,7 @@ export class TransactionsService {
 
   constructor(
     readonly prismaService: PrismaService,
+    private eventEmitter: EventEmitter2
   ) { }
 
   create(createTransactionDto: CreateTransactionDto) {
@@ -57,7 +59,7 @@ export class TransactionsService {
           this.logger.debug(`Transação já existe: ${existingTransaction.id}`);
           continue;
         }
-        await this.prismaService.transacoes.create({
+        const transaction = await this.prismaService.transacoes.create({
           data: {
             id: hash,
             data: data,
@@ -65,10 +67,11 @@ export class TransactionsService {
             banco: transacao.banco.toUpperCase(),
             valor: transacao.credito || transacao.debito,
             tipo: transacao.credito ? TipoTransacao.RECEITA : TipoTransacao.DESPESA,
-            categoria: TipoCategoria[transacao.categoria] || TipoCategoria.OUTROS,
+            categoria: await this.fixedCategoryTransactions(tenantId, transacao.descricao) || TipoCategoria[transacao.categoria] || TipoCategoria.OUTROS,
             tenantId,
           },
         });
+        this.eventEmitter.emit('transaction.created', transaction);
       } catch (error) {
         this.logger.error(`Erro ao criar transação bancária: ${JSON.stringify(transacao)}`, error);
       }
@@ -96,20 +99,43 @@ export class TransactionsService {
           this.logger.debug(`Transação de cartão de crédito já existe: ${existingTransaction.id}`);
           continue;
         }
-        await this.prismaService.transacoesCartaoCredito.create({
+        const transaction = await this.prismaService.transacoesCartaoCredito.create({
           data: {
             id: hash,
             data: data,
             descricao: transacao.descricao,
-            categoria: TipoCategoria[transacao.categoria] || TipoCategoria.OUTROS,
+            categoria: await this.fixedCategoryTransactions(tenantId, transacao.descricao) || TipoCategoria[transacao.categoria] || TipoCategoria.OUTROS,
             valor: transacao.valor_brl,
             banco: input.banco.toUpperCase(),
             tenantId,
           },
         });
+        this.eventEmitter.emit('transactionCreditCard.created', transaction);
       } catch (error) {
         this.logger.error(`Erro ao criar transação de cartão de crédito: ${JSON.stringify(transacao)}`, error);
       }
     }
+  }
+
+  async fixedCategoryTransactions(tenantId: number, descricao: string): Promise<TipoCategoria | undefined> {
+    this.logger.debug(`Buscando categoria fixa para tenantId: ${tenantId}, descricao: ${descricao}`);
+    const fixedCategory = await this.prismaService.palavrasChaveCategoria.findFirst({
+      where: {
+        tenantId: tenantId,
+        palavra: {
+          contains: descricao,
+          mode: 'insensitive',
+        },
+      },
+      select: {
+        categoria: true,
+      },
+    });
+    if (fixedCategory) {
+      this.logger.debug(`Categoria fixa encontrada: ${fixedCategory.categoria}`);
+      return fixedCategory.categoria;
+    }
+    this.logger.debug(`Nenhuma categoria fixa encontrada para a palavra: ${descricao}`);
+    return;
   }
 }
